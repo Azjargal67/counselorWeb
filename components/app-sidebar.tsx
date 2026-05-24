@@ -43,6 +43,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { label: "Нүүр",         href: "/teacher/home",     icon: Home },
     { label: "Ирсэн хүсэлт", href: "/teacher/requests", icon: Mail, badge: 4 },
     { label: "Бичсэн захидал",href: "/teacher/letters",  icon: FileText },
+    { label: "Чат",           href: "/teacher/chat",     icon: MessageSquare },
   ],
   admin: [
     { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
