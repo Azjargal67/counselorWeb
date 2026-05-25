@@ -26,6 +26,8 @@ const UserSchema = new Schema(
       ielts: { type: Number },
     }],
     status: { type: String, enum: ["active", "inactive"], default: "active" },
+    emailReminders: { type: Boolean, default: false },
+    reminderDays: { type: Number, default: 3, min: 1, max: 30 },
   },
   {
     timestamps: true,

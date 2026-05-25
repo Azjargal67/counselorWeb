@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AppTopbar } from "@/components/app-topbar"
 import {
   User, Lock, Bell, Globe, Shield, ChevronRight,
-  Camera, Save, Eye, EyeOff
+  Camera, Save, Eye, EyeOff, CheckCircle
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -61,7 +61,18 @@ export default function StudentSettingsPage() {
   const [showNewPw, setShowNewPw] = useState(false)
   const [profile, setProfile] = useState({ name: "Болормаа Дорж", email: "bolormaa@edu.mn", phone: "+976 9911 2233", grade: "12-р анги", bio: "STEM чиглэлд сонирхолтой сурагч." })
   const [notifs, setNotifs] = useState({ tasks: true, messages: true, deadlines: true, email: false, weekly: true })
+  const [emailReminders, setEmailReminders] = useState(false)
+  const [reminderDays, setReminderDays] = useState(3)
+  const [savingNotif, setSavingNotif] = useState(false)
+  const [savedNotif, setSavedNotif] = useState(false)
   const [lang, setLang] = useState("mn")
+
+  useEffect(() => {
+    fetch("/api/users/settings").then(r => r.json()).then(d => {
+      setEmailReminders(d.emailReminders ?? false)
+      setReminderDays(d.reminderDays ?? 3)
+    }).catch(() => {})
+  }, [])
 
   return (
     <div className="flex flex-col min-h-full">
@@ -223,21 +234,82 @@ export default function StudentSettingsPage() {
           )}
 
           {section === "notifications" && (
-            <SectionCard title="Мэдэгдлийн тохиргоо">
-              <div className="space-y-4 divide-y divide-[#E2E8F0]">
-                <Toggle value={notifs.tasks} onChange={() => setNotifs(n => ({ ...n, tasks: !n.tasks }))} label="Даалгаврын мэдэгдэл" sub="Шинэ даалгавар нэмэгдэх, статус өөрчлөгдөх үед" />
-                <div className="pt-4"><Toggle value={notifs.messages} onChange={() => setNotifs(n => ({ ...n, messages: !n.messages }))} label="Мессежийн мэдэгдэл" sub="Шинэ мессеж ирэх үед" /></div>
-                <div className="pt-4"><Toggle value={notifs.deadlines} onChange={() => setNotifs(n => ({ ...n, deadlines: !n.deadlines }))} label="Deadline сануулга" sub="Deadline-аас 3 өдрийн өмнө" /></div>
-                <div className="pt-4"><Toggle value={notifs.email} onChange={() => setNotifs(n => ({ ...n, email: !n.email }))} label="И-мэйл мэдэгдэл" sub="Мэдэгдлийг и-мэйлээр хүлээн авах" /></div>
-                <div className="pt-4"><Toggle value={notifs.weekly} onChange={() => setNotifs(n => ({ ...n, weekly: !n.weekly }))} label="7 хоногийн тайлан" sub="Долоо хоног тутамд явцын тайлан" /></div>
-              </div>
-              <div className="flex justify-end">
-                <button className="flex items-center gap-2 bg-[#4361EE] text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-[#8FA3D8] transition-colors">
-                  <Save className="w-4 h-4" />
-                  Хадгалах
-                </button>
-              </div>
-            </SectionCard>
+            <>
+              <SectionCard title="Апп мэдэгдэл">
+                <div className="space-y-4 divide-y divide-[#E2E8F0]">
+                  <Toggle value={notifs.tasks} onChange={() => setNotifs(n => ({ ...n, tasks: !n.tasks }))} label="Даалгаврын мэдэгдэл" sub="Шинэ даалгавар нэмэгдэх, статус өөрчлөгдөх үед" />
+                  <div className="pt-4"><Toggle value={notifs.messages} onChange={() => setNotifs(n => ({ ...n, messages: !n.messages }))} label="Мессежийн мэдэгдэл" sub="Шинэ мессеж ирэх үед" /></div>
+                  <div className="pt-4"><Toggle value={notifs.weekly} onChange={() => setNotifs(n => ({ ...n, weekly: !n.weekly }))} label="7 хоногийн тайлан" sub="Долоо хоног тутамд явцын тайлан" /></div>
+                </div>
+              </SectionCard>
+
+              <SectionCard title="И-мэйл сануулга">
+                <div className="space-y-5">
+                  <Toggle
+                    value={emailReminders}
+                    onChange={() => setEmailReminders(v => !v)}
+                    label="Deadline и-мэйл сануулга"
+                    sub="Deadline-аас өмнө и-мэйлээр сануулга авах"
+                  />
+
+                  {emailReminders && (
+                    <div className="pt-2">
+                      <label className="block text-xs font-semibold text-[#0F172A] mb-3">
+                        Deadline-аас хэдэн өдрийн өмнө сануулга илгээх?
+                      </label>
+                      <div className="flex gap-2 flex-wrap">
+                        {[1, 2, 3, 5, 7, 14].map(d => (
+                          <button
+                            key={d}
+                            onClick={() => setReminderDays(d)}
+                            className={cn(
+                              "px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all",
+                              reminderDays === d
+                                ? "border-[#4361EE] bg-[#EEF1FD] text-[#3451D1]"
+                                : "border-[#E2E8F0] text-[#64748B] hover:border-[#4361EE]/50"
+                            )}
+                          >
+                            {d} өдөр
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-[#64748B] mt-3">
+                        Deadline-аас <strong>{reminderDays} өдрийн өмнө</strong> өглөө 8:00 цагт и-мэйл ирнэ.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2">
+                    <div />
+                    <div className="flex items-center gap-3">
+                      {savedNotif && (
+                        <span className="flex items-center gap-1.5 text-xs text-[#4A8C4D] font-medium">
+                          <CheckCircle className="w-3.5 h-3.5" /> Хадгалагдлаа
+                        </span>
+                      )}
+                      <button
+                        onClick={async () => {
+                          setSavingNotif(true)
+                          await fetch("/api/users/settings", {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ emailReminders, reminderDays }),
+                          })
+                          setSavingNotif(false)
+                          setSavedNotif(true)
+                          setTimeout(() => setSavedNotif(false), 3000)
+                        }}
+                        disabled={savingNotif}
+                        className="flex items-center gap-2 bg-[#4361EE] text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-[#3451D1] transition-colors disabled:opacity-60"
+                      >
+                        <Save className="w-4 h-4" />
+                        {savingNotif ? "Хадгалж байна..." : "Хадгалах"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </SectionCard>
+            </>
           )}
 
           {section === "language" && (
