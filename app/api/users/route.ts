@@ -26,6 +26,11 @@ export async function GET(req: NextRequest) {
   if (payload.role === "counselor") filter.role = "student"
   if (payload.role === "student") filter.role = "teacher"
 
+  if (payload.role === "admin") {
+    const adminUser = await User.findById(payload.userId)
+    if (adminUser?.school) filter.school = adminUser.school
+  }
+
   const users = await User.find(filter).sort({ createdAt: -1 })
   return NextResponse.json({ users: users.map((u) => u.toJSON()) })
 }
@@ -38,7 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Зөвшөөрөл байхгүй" }, { status: 403 })
   }
 
-  const { name, email, password, role, grade, school } = await req.json()
+  const { name, email, password, role, grade } = await req.json()
 
   if (!name || !email || !password || !role) {
     return NextResponse.json({ error: "Заавал талбарууд дутуу байна" }, { status: 400 })
@@ -50,6 +55,10 @@ export async function POST(req: NextRequest) {
   if (existing) {
     return NextResponse.json({ error: "Энэ и-мэйл бүртгэлтэй байна" }, { status: 409 })
   }
+
+  // admin-ийн сургуулийг шинэ хэрэглэгчид автоматаар оноо
+  const adminUser = await User.findById(payload.userId)
+  const school = adminUser?.school ?? ""
 
   const hashed = await bcrypt.hash(password, 12)
   const user = await User.create({ name, email, password: hashed, role, grade, school })
