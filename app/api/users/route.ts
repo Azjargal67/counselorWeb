@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
   const filter: Record<string, unknown> = {}
   if (role) filter.role = role
 
-  // counselor can only see students
   if (payload.role === "counselor") filter.role = "student"
+  if (payload.role === "student") filter.role = "teacher"
 
   const users = await User.find(filter).sort({ createdAt: -1 })
   return NextResponse.json({ users: users.map((u) => u.toJSON()) })

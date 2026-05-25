@@ -65,6 +65,7 @@ export default function StudentTasksPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [taskProgress, setTaskProgress] = useState<Record<string, number>>({})
   const [notes, setNotes] = useState("")
+  const [taskStatus, setTaskStatus] = useState<Task["status"]>("todo")
   const [showCareerTest, setShowCareerTest] = useState(false)
   const [careerTestViewResults, setCareerTestViewResults] = useState(false)
 
@@ -186,7 +187,7 @@ export default function StudentTasksPage() {
             return (
               <div
                 key={task.id}
-                onClick={() => { setSelectedTask(task); setNotes(task.notes ?? ""); setTaskProgress({ ...taskProgress, [task.id]: task.progress }) }}
+                onClick={() => { setSelectedTask(task); setNotes(task.notes ?? ""); setTaskStatus(task.status); setTaskProgress({ ...taskProgress, [task.id]: task.progress }) }}
                 className="bg-white rounded-xl border border-[#E2E8F0] p-4 hover:border-[#4361EE] hover:shadow-md transition-all cursor-pointer card-shadow"
               >
                 <div className="flex items-start justify-between mb-3">
@@ -259,6 +260,33 @@ export default function StudentTasksPage() {
                 </div>
               </div>
 
+              {/* Status */}
+              <div>
+                <h4 className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-2">Төлөв өөрчлөх</h4>
+                <div className="flex gap-2">
+                  {(["todo", "in-progress", "done"] as Task["status"][]).map(s => {
+                    const labels: Record<string, string> = { todo: "Хийгдээгүй", "in-progress": "Хийж байна", done: "Дууссан" }
+                    const colors: Record<string, string> = {
+                      todo: "border-[#E2E8F0] text-[#64748B]",
+                      "in-progress": "border-[#4361EE] text-[#4361EE]",
+                      done: "border-[#4A8C4D] text-[#4A8C4D]",
+                    }
+                    const activeColors: Record<string, string> = {
+                      todo: "bg-[#E2E8F0] text-[#0F172A] border-[#E2E8F0]",
+                      "in-progress": "bg-[#EEF1FD] text-[#4361EE] border-[#4361EE]",
+                      done: "bg-[#DFEDE0] text-[#4A8C4D] border-[#4A8C4D]",
+                    }
+                    return (
+                      <button key={s} onClick={() => setTaskStatus(s)}
+                        className={cn("flex-1 py-2 rounded-lg border text-xs font-semibold transition-all",
+                          taskStatus === s ? activeColors[s] : colors[s] + " hover:bg-[#F8FAFC]")}>
+                        {labels[s]}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
               {/* Counselor notes */}
               {selectedTask.notes && (
                 <div>
@@ -311,7 +339,7 @@ export default function StudentTasksPage() {
                   fetch(`/api/tasks/${selectedTask.id}`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ progress, notes }),
+                    body: JSON.stringify({ progress, notes, status: taskStatus }),
                   }).then(r => r.json()).then(d => {
                     if (d.task) setTasks(prev => prev.map(t => t.id === d.task.id ? d.task : t))
                     setSelectedTask(null)

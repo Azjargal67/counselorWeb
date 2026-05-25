@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { AppTopbar } from "@/components/app-topbar"
-import { FileText, Building2, Calendar, Clock, CheckCircle2, X, PenLine, Eye } from "lucide-react"
+import { FileText, Building2, Calendar, Clock, CheckCircle2, X, PenLine, Eye, Plus, Send } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface RecommendationRequest {
@@ -10,6 +10,8 @@ interface RecommendationRequest {
   deadline: string; status: "pending" | "writing" | "sent" | "rejected"
   message: string; letterContent?: string; createdAt: string
 }
+
+interface Teacher { id: string; name: string; email: string }
 
 const statusConfig = {
   pending:  { label: "Хүлээгдэж буй", color: "bg-amber-50 text-amber-700 border-amber-200", icon: Clock },
@@ -21,12 +23,61 @@ const statusConfig = {
 export default function StudentLettersPage() {
   const [requests, setRequests] = useState<RecommendationRequest[]>([])
   const [selected, setSelected] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [teachers, setTeachers] = useState<Teacher[]>([])
+  const [reqTeacherId, setReqTeacherId] = useState("")
+  const [reqSchool, setReqSchool] = useState("")
+  const [reqDeadline, setReqDeadline] = useState("")
+  const [reqMessage, setReqMessage] = useState("")
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState("")
 
   useEffect(() => {
     fetch("/api/recommendations")
       .then(r => r.json())
       .then(d => setRequests(d.requests ?? []))
   }, [])
+
+  useEffect(() => {
+    if (showForm && teachers.length === 0) {
+      fetch("/api/users?role=teacher")
+        .then(r => r.json())
+        .then(d => setTeachers((d.users ?? []).map((u: { _id: string; id?: string; name: string; email: string }) => ({ id: u._id ?? u.id, name: u.name, email: u.email }))))
+    }
+  }, [showForm, teachers.length])
+
+  const selectedTeacher = teachers.find(t => t.id === reqTeacherId)
+
+  const handleSend = async () => {
+    if (!reqTeacherId || !reqSchool || !reqDeadline) {
+      setSendError("Багш, сургууль, deadline заавал оруулна уу"); return
+    }
+    setSending(true); setSendError("")
+    try {
+      const res = await fetch("/api/recommendations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teacherId: reqTeacherId,
+          teacherName: selectedTeacher?.name ?? "",
+          school: reqSchool,
+          deadline: reqDeadline,
+          message: reqMessage,
+        }),
+      })
+      const data = await res.json()
+      if (data.request) {
+        setRequests(prev => [data.request, ...prev])
+        setShowForm(false)
+        setReqTeacherId(""); setReqSchool(""); setReqDeadline(""); setReqMessage("")
+      } else {
+        setSendError(data.error ?? "Алдаа гарлаа")
+      }
+    } catch {
+      setSendError("Алдаа гарлаа")
+    }
+    setSending(false)
+  }
 
   const selectedReq = requests.find(r => r.id === selected)
 
@@ -37,8 +88,12 @@ export default function StudentLettersPage() {
       <div className="flex-1 flex overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
         {/* List */}
         <div className="flex flex-col w-full max-w-sm flex-shrink-0 border-r border-[#E2E8F0] bg-white">
-          <div className="px-4 py-3 border-b border-[#E2E8F0]">
+          <div className="px-4 py-3 border-b border-[#E2E8F0] flex items-center justify-between">
             <p className="text-xs text-[#64748B]">Нийт {requests.length} хүсэлт</p>
+            <button onClick={() => setShowForm(true)}
+              className="flex items-center gap-1.5 bg-[#4361EE] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#3451D1] transition-colors">
+              <Plus className="w-3.5 h-3.5" /> Шинэ хүсэлт
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-[#E2E8F0]">
             {requests.length === 0 && (
@@ -143,6 +198,70 @@ export default function StudentLettersPage() {
           )}
         </div>
       </div>
+
+      {/* New request modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+          onClick={e => { if (e.target === e.currentTarget) setShowForm(false) }}>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
+              <p className="font-bold text-[#0F172A]">Тодорхойлох захидлын хүсэлт</p>
+              <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-[#F8FAFC] transition-colors">
+                <X className="w-4 h-4 text-[#64748B]" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Teacher */}
+              <div>
+                <label className="block text-xs font-semibold text-[#64748B] mb-1.5">Багш сонгох</label>
+                <select value={reqTeacherId} onChange={e => setReqTeacherId(e.target.value)}
+                  className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm text-[#0F172A] bg-white outline-none focus:border-[#4361EE] transition-colors">
+                  <option value="">— Багш сонгоно уу —</option>
+                  {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+
+              {/* School */}
+              <div>
+                <label className="block text-xs font-semibold text-[#64748B] mb-1.5">Зорилтот сургуулийн нэр</label>
+                <input value={reqSchool} onChange={e => setReqSchool(e.target.value)}
+                  placeholder="жишээ: MIT, Harvard..."
+                  className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm text-[#0F172A] outline-none focus:border-[#4361EE] transition-colors" />
+              </div>
+
+              {/* Deadline */}
+              <div>
+                <label className="block text-xs font-semibold text-[#64748B] mb-1.5">Deadline</label>
+                <input type="date" value={reqDeadline} onChange={e => setReqDeadline(e.target.value)}
+                  className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm text-[#0F172A] outline-none focus:border-[#4361EE] transition-colors" />
+              </div>
+
+              {/* Message */}
+              <div>
+                <label className="block text-xs font-semibold text-[#64748B] mb-1.5">Нэмэлт мэдээлэл (заавал биш)</label>
+                <textarea value={reqMessage} onChange={e => setReqMessage(e.target.value)}
+                  rows={3} placeholder="Захидалд онцлох зүйл байвал бичнэ үү..."
+                  className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-sm text-[#0F172A] outline-none focus:border-[#4361EE] transition-colors resize-none" />
+              </div>
+
+              {sendError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{sendError}</p>}
+            </div>
+
+            <div className="flex gap-3 px-6 pb-6">
+              <button onClick={() => setShowForm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] text-sm font-medium text-[#64748B] hover:bg-[#F8FAFC] transition-colors">
+                Болих
+              </button>
+              <button onClick={handleSend} disabled={sending}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#4361EE] text-white text-sm font-semibold hover:bg-[#3451D1] transition-colors disabled:opacity-60">
+                <Send className="w-3.5 h-3.5" />
+                {sending ? "Илгээж байна..." : "Илгээх"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
