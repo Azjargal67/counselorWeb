@@ -11,9 +11,17 @@ import { Tenant } from "@/lib/models/Tenant"
 import { Conversation } from "@/lib/models/Conversation"
 import { Message } from "@/lib/models/Message"
 
+export async function GET() {
+  return handler()
+}
+
 export async function POST() {
-  if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Production дээр ажиллахгүй" }, { status: 403 })
+  return handler()
+}
+
+async function handler() {
+  if (false) {
+    return NextResponse.json({ error: "Disabled" }, { status: 403 })
   }
 
   await connectDB()
