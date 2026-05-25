@@ -10,7 +10,8 @@ const RecommendationRequestSchema = new Schema(
     deadline:    { type: Date, required: true },
     status:      { type: String, enum: ["pending", "writing", "sent", "rejected"], default: "pending" },
     message:     { type: String },
-    notes:       { type: String },
+    notes:         { type: String },
+    letterContent: { type: String, default: "" },
   },
   {
     timestamps: true,
