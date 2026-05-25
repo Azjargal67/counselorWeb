@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { verifyToken } from "@/lib/jwt"
 import { connectDB } from "@/lib/db"
 import { Task } from "@/lib/models/Task"
+import { Notification } from "@/lib/models/Notification"
 
 async function getPayload(req: NextRequest) {
   const token = req.cookies.get("token")?.value
@@ -83,6 +84,14 @@ export async function POST(req: NextRequest) {
     studentId,
     counselorId: payload.userId,
     notes,
+  })
+
+  await Notification.create({
+    userId: studentId,
+    type: "task",
+    title: "Шинэ даалгавар нэмэгдлээ",
+    message: `"${title}" даалгавар таньд өгөгдлөө.`,
+    link: "/student/tasks",
   })
 
   return NextResponse.json({ task: task.toJSON() }, { status: 201 })

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { verifyToken } from "@/lib/jwt"
 import { connectDB } from "@/lib/db"
 import { RecommendationRequest } from "@/lib/models/RecommendationRequest"
+import { Notification } from "@/lib/models/Notification"
 
 async function getPayload(req: NextRequest) {
   const token = req.cookies.get("token")?.value
@@ -51,5 +52,14 @@ export async function POST(req: NextRequest) {
     deadline: new Date(deadline),
     message,
   })
+
+  await Notification.create({
+    userId: teacherId,
+    type: "recommendation",
+    title: "Шинэ recommendation хүсэлт",
+    message: `${studentName ?? payload.name} сурагч "${school}" сургуульд зориулж хүсэлт илгээлээ.`,
+    link: "/teacher/requests",
+  })
+
   return NextResponse.json({ request: request.toJSON() }, { status: 201 })
 }
