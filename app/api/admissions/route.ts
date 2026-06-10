@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   const { schoolName, country, status, scholarshipPercent, scholarshipAmount, currency, major, notes, resultDate } = body
 
   if (!schoolName || !status) {
-    return NextResponse.json({ error: "Заавал талбарууд дутуу байна" }, { status: 400 })
+    return NextResponse.json({ error: "Заавал бөглөх талбарууд дутуу байна" }, { status: 400 })
   }
 
   await connectDB()

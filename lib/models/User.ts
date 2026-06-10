@@ -33,7 +33,6 @@ const UserSchema = new Schema(
     timestamps: true,
     toJSON: {
       virtuals: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       transform(_: unknown, ret: any) {
         ret.id = ret._id.toString()
         delete ret._id

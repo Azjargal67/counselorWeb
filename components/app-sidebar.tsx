@@ -27,7 +27,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { label: "Сургууль",         href: "/student/schools",             icon: GraduationCap },
     { label: "AI зөвлөмж",       href: "/student/ai-recommendations",  icon: Sparkles },
     { label: "Тэнцэлт",          href: "/student/admissions",          icon: Trophy },
-    { label: "Recommendation",   href: "/student/letters",             icon: FileText },
+    { label: "Тодорхойлох захидал", href: "/student/letters",           icon: FileText },
     { label: "Чат",              href: "/student/chat",                icon: MessageSquare, badge: 2 },
     { label: "Академик мэдээлэл",href: "/student/academic",            icon: BarChart2 },
     { label: "Тохиргоо",         href: "/student/settings",            icon: Settings },
